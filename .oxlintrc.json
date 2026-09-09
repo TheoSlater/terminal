@@ -1,0 +1,33 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript"],
+  "categories": {
+    "correctness": "error",
+    "suspicious": "warn",
+    "perf": "warn",
+    "style": "warn"
+  },
+  "rules": {
+    "no-unused-vars": "warn",
+    "no-debugger": "error",
+    "no-console": "warn",
+    "eqeqeq": "warn",
+    "typescript/no-explicit-any": "warn",
+    "react/self-closing-comp": "warn",
+    "react/jsx-no-useless-fragment": "warn",
+    "react/react-in-jsx-scope": "off",
+    "react/function-component-definition": [
+      "warn",
+      {
+        "namedComponents": ["function-declaration", "arrow-function"],
+        "unnamedComponents": ["function-expression", "arrow-function"]
+      }
+    ]
+  },
+  "ignorePatterns": [
+    "target/",
+    "dist/",
+    "node_modules/",
+    "src-tauri/"
+  ]
+}
