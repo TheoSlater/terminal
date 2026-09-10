@@ -1,5 +1,10 @@
+import { MotionConfig } from "motion/react";
 import { TerminalSessionManager } from "./components/TerminalSessionManager";
 
 export default function App() {
-  return <TerminalSessionManager />;
+  return (
+    <MotionConfig reducedMotion="user">
+      <TerminalSessionManager />
+    </MotionConfig>
+  );
 }

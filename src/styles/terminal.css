@@ -8,6 +8,10 @@
   --term-fg-muted: #aeb6c2;
   --term-fg-dim: #8f98a6;
   --term-border: #4b5360;
+  --motion-duration-fast: 160ms;
+  --motion-duration-quick: 120ms;
+  --motion-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
 }
 
 /* === Base === */
@@ -75,6 +79,10 @@ body,
   color: var(--term-fg-dim);
   cursor: pointer;
   overflow: hidden;
+  transition:
+    background-color var(--motion-duration-fast) var(--motion-ease-enter),
+    border-color var(--motion-duration-fast) var(--motion-ease-enter),
+    color var(--motion-duration-fast) var(--motion-ease-enter);
   white-space: nowrap;
   user-select: none;
 }
@@ -116,6 +124,9 @@ body,
   border: 0;
   background: transparent;
   color: inherit;
+  transition:
+    background-color var(--motion-duration-quick) var(--motion-ease-enter),
+    color var(--motion-duration-quick) var(--motion-ease-enter);
 }
 
 .session-tab-close {
@@ -167,6 +178,9 @@ body,
   border: 0;
   background: transparent;
   color: var(--term-fg-muted);
+  transition:
+    background-color var(--motion-duration-quick) var(--motion-ease-enter),
+    color var(--motion-duration-quick) var(--motion-ease-enter);
 }
 
 .window-controls svg {

@@ -1,5 +1,7 @@
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import { Plus } from "lucide-react";
+import { motion } from "motion/react";
+import { fadeVariants, microMotion } from "@/lib/motion";
 import type { Session } from "@/types/terminal";
 import { SessionTabs } from "./SessionTabs";
 import { WindowControls } from "./WindowControls";
@@ -26,9 +28,12 @@ export function TitleBar({
   };
 
   return (
-    <header
+    <motion.header
       data-tauri-drag-region
       className="titlebar"
+      variants={fadeVariants}
+      initial="initial"
+      animate="animate"
       onMouseDown={handleDrag}
     >
       <span className="titlebar-brand">terminal</span>
@@ -40,7 +45,8 @@ export function TitleBar({
         onSelect={onSelect}
       />
 
-      <button
+      <motion.button
+        {...microMotion}
         type="button"
         className="titlebar-action"
         aria-label="New terminal"
@@ -48,9 +54,9 @@ export function TitleBar({
         onClick={onNew}
       >
         <Plus aria-hidden="true" />
-      </button>
+      </motion.button>
 
       <WindowControls />
-    </header>
+    </motion.header>
   );
 }

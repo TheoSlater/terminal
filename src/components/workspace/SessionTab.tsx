@@ -1,4 +1,6 @@
+import { motion } from "motion/react";
 import { X } from "lucide-react";
+import { motionTransitions, tabVariants } from "@/lib/motion";
 
 type Props = {
   active: boolean;
@@ -9,7 +11,13 @@ type Props = {
 
 export function SessionTab({ active, label, onClose, onSelect }: Props) {
   return (
-    <div
+    <motion.div
+      layout="position"
+      transition={{ layout: motionTransitions.tab }}
+      variants={tabVariants}
+      initial="initial"
+      animate="animate"
+      exit="exit"
       className={active ? "session-tab active" : "session-tab"}
       role="tab"
       aria-selected={active}
@@ -26,7 +34,12 @@ export function SessionTab({ active, label, onClose, onSelect }: Props) {
     >
       <span className="session-tab-label">{label}</span>
       {active ? (
-        <span aria-hidden="true" className="session-tab-active-indicator" />
+        <motion.span
+          aria-hidden="true"
+          className="session-tab-active-indicator"
+          layoutId="active-tab-indicator"
+          transition={motionTransitions.indicator}
+        />
       ) : null}
       <button
         type="button"
@@ -39,6 +52,6 @@ export function SessionTab({ active, label, onClose, onSelect }: Props) {
       >
         <X aria-hidden="true" />
       </button>
-    </div>
+    </motion.div>
   );
 }
