@@ -1,3 +1,4 @@
+import { forwardRef } from "react";
 import { motion } from "motion/react";
 import { X } from "lucide-react";
 import { motionTransitions, tabVariants } from "@/lib/motion";
@@ -9,9 +10,13 @@ type Props = {
   onSelect: () => void;
 };
 
-export function SessionTab({ active, label, onClose, onSelect }: Props) {
+export const SessionTab = forwardRef<HTMLDivElement, Props>(function SessionTab(
+  { active, label, onClose, onSelect },
+  ref,
+) {
   return (
     <motion.div
+      ref={ref}
       layout="position"
       transition={{ layout: motionTransitions.tab }}
       variants={tabVariants}
@@ -54,4 +59,4 @@ export function SessionTab({ active, label, onClose, onSelect }: Props) {
       </button>
     </motion.div>
   );
-}
+});

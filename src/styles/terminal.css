@@ -8,7 +8,7 @@
   --term-fg-muted: #aeb6c2;
   --term-fg-dim: #8f98a6;
   --term-border: #4b5360;
-  --motion-duration-fast: 160ms;
+  --motion-duration-fast: 220ms;
   --motion-duration-quick: 120ms;
   --motion-ease-enter: cubic-bezier(0.22, 1, 0.36, 1);
   --motion-ease-exit: cubic-bezier(0.4, 0, 1, 1);
@@ -261,6 +261,12 @@ body,
 
 .terminal.wterm .term-grid {
   min-height: 100%;
+  opacity: 0;
+  transition: opacity var(--motion-duration-fast) var(--motion-ease-enter);
+}
+
+.terminal.wterm[data-terminal-ready="true"] .term-grid {
+  opacity: 1;
 }
 
 .session-loading {
@@ -334,6 +340,11 @@ body,
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .terminal.wterm .term-grid {
+    opacity: 1;
+    transition: none;
+  }
+
   .session-tab,
   .session-tab-close,
   .titlebar-action,

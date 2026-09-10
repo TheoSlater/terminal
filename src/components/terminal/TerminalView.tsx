@@ -40,6 +40,7 @@ export function TerminalView({
       onReady={(wterm) => {
         if (wterm !== terminalRef.current?.instance) return;
         wterm.element.style.height = "100%";
+        wterm.element.dataset.terminalReady = "true";
         onReady(wterm);
       }}
       onTitle={onTitle}
