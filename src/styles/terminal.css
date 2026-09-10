@@ -1,0 +1,347 @@
+/* ── Terminal app — organized by section ── */
+
+:root {
+  --term-bg: #202124;
+  --term-bg-2: #292a2d;
+  --term-bg-hover: #3a3b3f;
+  --term-fg: #d7dee8;
+  --term-fg-muted: #aeb6c2;
+  --term-fg-dim: #8f98a6;
+  --term-border: #4b5360;
+}
+
+/* === Base === */
+html,
+body,
+#root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  overflow: hidden;
+  background: var(--term-bg);
+}
+
+.terminal-shell {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: var(--term-bg);
+  color: var(--term-fg);
+}
+
+/* === Title bar === */
+.titlebar {
+  display: flex;
+  align-items: center;
+  flex: 0 0 30px;
+  height: 30px;
+  gap: 8px;
+  padding-left: 10px;
+  background: var(--term-bg-2);
+  color: var(--term-fg-muted);
+  font:
+    12px Inter,
+    sans-serif;
+  user-select: none;
+}
+
+.titlebar-brand {
+  flex: 0 0 auto;
+  letter-spacing: 0.02em;
+}
+
+/* === Session tabs === */
+.session-tabs {
+  display: flex;
+  align-self: stretch;
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.session-tab {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 220px;
+  height: 100%;
+  gap: 6px;
+  padding: 0 32px 0 9px;
+  border-left: 1px solid transparent;
+  color: var(--term-fg-dim);
+  cursor: pointer;
+  overflow: hidden;
+  white-space: nowrap;
+  user-select: none;
+}
+
+.session-tab:hover,
+.session-tab.active {
+  background: var(--term-bg);
+  color: var(--term-fg);
+}
+
+.session-tab.active {
+  border-left-color: var(--term-border);
+}
+
+.session-tab-label {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.session-tab-active-indicator {
+  position: absolute;
+  right: 8px;
+  bottom: 0;
+  left: 8px;
+  height: 2px;
+  border-radius: 2px 2px 0 0;
+  background: var(--term-fg);
+  pointer-events: none;
+}
+
+.session-tab-close,
+.titlebar-action {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.session-tab-close {
+  position: absolute;
+  top: 50%;
+  right: 5px;
+  width: 18px;
+  height: 18px;
+  transform: translateY(-50%);
+}
+
+.titlebar-action {
+  flex: 0 0 auto;
+  width: 24px;
+  height: 24px;
+  margin-left: -4px;
+}
+
+.session-tab-close:hover,
+.titlebar-action:hover {
+  background: var(--term-bg-hover);
+  color: #fff;
+}
+
+.session-tab-close svg {
+  width: 12px;
+  height: 12px;
+  stroke-width: 1.75;
+}
+
+.titlebar-action svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.75;
+}
+
+/* === Window controls (min/max/close) === */
+.window-controls {
+  display: flex;
+  flex: 0 0 auto;
+  height: 100%;
+  margin-left: auto;
+}
+
+.window-controls button {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  border: 0;
+  background: transparent;
+  color: var(--term-fg-muted);
+}
+
+.window-controls svg {
+  width: 14px;
+  height: 14px;
+  stroke-width: 1.75;
+}
+
+.window-controls button:hover {
+  background: var(--term-bg-hover);
+  color: #fff;
+}
+
+.window-controls button:last-child:hover {
+  background: #c42b2b;
+}
+
+/* === Terminal viewport + sessions === */
+.terminal-viewport {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 0;
+}
+
+/* Dev-only resize experiment: ?resizeTest=hide */
+.terminal-viewport[data-resize-test="hide"] .terminal {
+  visibility: hidden;
+}
+
+.terminal-sessions {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 0;
+  height: 0;
+  overflow: hidden;
+}
+
+.terminal-session {
+  position: absolute;
+  inset: 0;
+  display: none;
+  overflow: hidden;
+  min-width: 0;
+  min-height: 0;
+}
+
+.terminal-session.active {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.terminal {
+  display: block;
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 0;
+  width: 100%;
+  height: 100%;
+  box-sizing: border-box;
+}
+
+.terminal.wterm {
+  --term-bg: #202124;
+  --term-fg: #d7dee8;
+  --term-font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", monospace;
+  --term-font-size: 14px;
+  --term-line-height: 1.15;
+  --term-row-height: 16px;
+  padding: 9px;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.terminal.wterm .term-grid {
+  min-height: 100%;
+}
+
+.session-loading {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  color: var(--term-fg);
+  font: 13px monospace;
+}
+
+/* === Resize handles (frameless window) === */
+.resize-handles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.resize-handle {
+  position: absolute;
+  z-index: 10;
+  pointer-events: auto;
+}
+
+.resize-handle.north,
+.resize-handle.south {
+  left: 8px;
+  right: 8px;
+  height: 6px;
+}
+
+.resize-handle.north {
+  top: 0;
+  cursor: ns-resize;
+}
+
+.resize-handle.south {
+  bottom: 0;
+  cursor: ns-resize;
+}
+
+.resize-handle.east,
+.resize-handle.west {
+  top: 8px;
+  bottom: 8px;
+  width: 6px;
+}
+
+.resize-handle.east {
+  right: 0;
+  cursor: ew-resize;
+}
+
+.resize-handle.west {
+  left: 0;
+  cursor: ew-resize;
+}
+
+.resize-handle.north-west,
+.resize-handle.north-east,
+.resize-handle.south-west,
+.resize-handle.south-east {
+  width: 10px;
+  height: 10px;
+}
+
+.resize-handle.north-west {
+  top: 0;
+  left: 0;
+  cursor: nwse-resize;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .session-tab,
+  .session-tab-close,
+  .titlebar-action,
+  .window-controls button {
+    transition-duration: 0ms;
+  }
+}
+
+.resize-handle.north-east {
+  top: 0;
+  right: 0;
+  cursor: nesw-resize;
+}
+
+.resize-handle.south-west {
+  bottom: 0;
+  left: 0;
+  cursor: nesw-resize;
+}
+
+.resize-handle.south-east {
+  right: 0;
+  bottom: 0;
+  cursor: nwse-resize;
+}

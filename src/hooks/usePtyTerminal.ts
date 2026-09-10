@@ -1,137 +1,126 @@
-import { invoke } from "@tauri-apps/api/core";
-import { listen, type UnlistenFn } from "@tauri-apps/api/event";
 import { useCallback, useLayoutEffect, useRef } from "react";
-import {
-  PTY_EVENTS,
-  TERMINAL_SAFE_SIZE,
-  TERMINAL_SESSION_ID,
-} from "../constants/terminal";
+import { TERMINAL_SAFE_SIZE } from "@/constants/terminal";
+import { ptyClient } from "@/lib/pty/client";
+import { logPtyError } from "@/lib/pty/errors";
+import type { TerminalSize } from "@/types/terminal";
+import { usePtyLifecycle } from "./pty/usePtyLifecycle";
+import { usePtyResizeQueue } from "./pty/usePtyResizeQueue";
 
-type TerminalSize = { cols: number; rows: number };
-type PtyLifecycle = {
-  cancelled: boolean;
-  cleanups: UnlistenFn[];
-  startPromise: Promise<void> | null;
-  started: boolean;
-};
-
+/**
+ * Manages the PTY for one terminal session:
+ * - connects event listeners (output / exit)
+ * - starts / stops the native PTY
+ * - throttles resize IPC
+ * - forwards user input
+ */
 export function usePtyTerminal(
+  sessionId: string,
   write: (data: string | Uint8Array) => void,
   focus: () => void,
-  onOutput?: () => void,
+  onStarted?: (cwd: string) => void,
+  onExit?: (code: number | null) => void,
 ) {
   const sizeRef = useRef<TerminalSize>(TERMINAL_SAFE_SIZE);
   const connectedRef = useRef(false);
+
+  // Keep latest callbacks without re-creating listeners
   const writeRef = useRef(write);
   const focusRef = useRef(focus);
-  const onOutputRef = useRef(onOutput);
-  const lifecycleRef = useRef<PtyLifecycle | null>(null);
-  const listenersReadyRef = useRef<Promise<void>>(Promise.resolve());
+  const onStartedRef = useRef(onStarted);
+  const onExitRef = useRef(onExit);
 
   useLayoutEffect(() => {
     writeRef.current = write;
     focusRef.current = focus;
-    onOutputRef.current = onOutput;
-  }, [focus, onOutput, write]);
+    onStartedRef.current = onStarted;
+    onExitRef.current = onExit;
+  }, [write, focus, onStarted, onExit]);
 
+  const isConnected = useCallback(() => connectedRef.current, []);
+  const { enqueue: enqueueResize, reset: resetResize } = usePtyResizeQueue(
+    sessionId,
+    isConnected,
+  );
+
+  const { lifecycleRef, listenersReadyRef } = usePtyLifecycle(sessionId, {
+    onConnectedChange: (connected) => {
+      connectedRef.current = connected;
+    },
+    onExit: (code) => onExitRef.current?.(code),
+    onWrite: (data) => writeRef.current(data),
+  });
+
+  // Reset resize queue when session tears down (lifecycle handles connected=false)
   useLayoutEffect(() => {
-    const lifecycle: PtyLifecycle = {
-      cancelled: false,
-      cleanups: [],
-      startPromise: null,
-      started: false,
-    };
-    lifecycleRef.current = lifecycle;
-
-    const listenersReady = Promise.all([
-      listen<number[]>(PTY_EVENTS.output, (event) => {
-        writeRef.current(Uint8Array.from(event.payload));
-        onOutputRef.current?.();
-      }),
-      listen(PTY_EVENTS.exit, () => {
-        connectedRef.current = false;
-      }),
-    ])
-      .then((listeners) => {
-        if (lifecycle.cancelled) {
-          listeners.forEach((cleanup) => cleanup());
-          return;
-        }
-        lifecycle.cleanups = listeners;
-      })
-      .catch((error) => {
-        console.error("[terminal][frontend] unable to install PTY listeners", error);
-        throw error;
-      });
-    listenersReadyRef.current = listenersReady;
-
     return () => {
-      lifecycle.cancelled = true;
-      connectedRef.current = false;
-      lifecycle.cleanups.forEach((cleanup) => cleanup());
-      lifecycle.cleanups = [];
-      if (lifecycle.started) {
-        lifecycle.started = false;
-        void invoke("stop_pty", { sessionId: TERMINAL_SESSION_ID }).catch(
-          (error) => console.error("[terminal][frontend] unable to stop PTY", error),
-        );
-      }
-      if (lifecycleRef.current === lifecycle) lifecycleRef.current = null;
+      resetResize();
     };
-  }, []);
+  }, [resetResize, sessionId]);
 
   const start = useCallback(() => {
-    const lifecycle = lifecycleRef.current;
-    if (!lifecycle || lifecycle.cancelled) return Promise.resolve();
-    if (lifecycle.startPromise) return lifecycle.startPromise;
-    const listenersReady = listenersReadyRef.current;
+    const lc = lifecycleRef.current;
+    if (!lc || lc.cancelled) return Promise.resolve();
+    if (lc.startPromise) return lc.startPromise;
 
-    const startPromise = (async () => {
-      await listenersReady;
-      if (lifecycle.cancelled || lifecycleRef.current !== lifecycle) return;
-      await invoke("start_pty", {
-        sessionId: TERMINAL_SESSION_ID,
-        ...TERMINAL_SAFE_SIZE,
-      });
-      if (lifecycle.cancelled || lifecycleRef.current !== lifecycle) {
-        await invoke("stop_pty", { sessionId: TERMINAL_SESSION_ID });
+    const promise = (async () => {
+      await listenersReadyRef.current;
+      if (lc.cancelled || lifecycleRef.current !== lc) return;
+
+      const startSize = sizeRef.current;
+      const cwd = await ptyClient.start(
+        sessionId,
+        startSize.cols,
+        startSize.rows,
+      );
+
+      if (lc.cancelled || lifecycleRef.current !== lc) {
+        await ptyClient.stop(sessionId);
         return;
       }
-      lifecycle.started = true;
+
+      lc.started = true;
       connectedRef.current = true;
+      onStartedRef.current?.(cwd);
       focusRef.current();
-    })().catch((error) => {
-      console.error("[terminal][frontend] unable to start the native PTY", error);
-    });
-    lifecycle.startPromise = startPromise;
-    return startPromise;
-  }, []);
 
-  const writeInput = useCallback((data: string) => {
-    void invoke("write_pty", { sessionId: TERMINAL_SESSION_ID, data }).catch(
-      (error) => console.error("[terminal][frontend] unable to write PTY input", error),
-    );
-  }, []);
+      // If size changed while PTY was starting, enqueue the latest size
+      if (
+        sizeRef.current.cols !== startSize.cols ||
+        sizeRef.current.rows !== startSize.rows
+      ) {
+        enqueueResize(sizeRef.current);
+      }
+    })().catch((e) => logPtyError("unable to start the native PTY", e));
 
-  const resize = useCallback((cols: number, rows: number) => {
-    const nextSize = {
-      cols: Math.max(1, Math.floor(cols)),
-      rows: Math.max(1, Math.floor(rows)),
-    };
-    if (
-      sizeRef.current?.cols === nextSize.cols &&
-      sizeRef.current.rows === nextSize.rows
-    )
-      return;
-    sizeRef.current = nextSize;
-    if (connectedRef.current) {
-      void invoke("terminal_resize", {
-        sessionId: TERMINAL_SESSION_ID,
-        ...nextSize,
-      }).catch((error) =>
-        console.error("[terminal][frontend] unable to resize PTY", error),
-      );
-    }
-  }, []);
+    lc.startPromise = promise;
+    return promise;
+  }, [enqueueResize, lifecycleRef, listenersReadyRef, sessionId]);
+
+  const writeInput = useCallback(
+    (data: string) => {
+      void ptyClient
+        .write(sessionId, data)
+        .catch((e) => logPtyError("unable to write PTY input", e));
+    },
+    [sessionId],
+  );
+
+  const resize = useCallback(
+    (cols: number, rows: number) => {
+      const next: TerminalSize = {
+        cols: Math.max(1, Math.floor(cols)),
+        rows: Math.max(1, Math.floor(rows)),
+      };
+      if (
+        sizeRef.current.cols === next.cols &&
+        sizeRef.current.rows === next.rows
+      )
+        return;
+      sizeRef.current = next;
+      if (connectedRef.current) enqueueResize(next);
+    },
+    [enqueueResize],
+  );
+
   return { resize, start, writeInput };
 }
