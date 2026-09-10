@@ -1,4 +1,5 @@
 import { Terminal, type useTerminal } from "@wterm/react";
+import type { CSSProperties } from "react";
 import type { WTerm } from "@wterm/dom";
 import type { GhosttyCore } from "@wterm/ghostty";
 import { TERMINAL_SAFE_SIZE } from "@/constants/terminal";
@@ -7,6 +8,7 @@ type TerminalRef = ReturnType<typeof useTerminal>["ref"];
 
 type Props = {
   core: GhosttyCore | null;
+  fontSize: number;
   terminalRef: TerminalRef;
   onReady: (wterm: WTerm) => void;
   onTitle: (title: string) => void;
@@ -15,6 +17,7 @@ type Props = {
 
 export function TerminalView({
   core,
+  fontSize,
   terminalRef,
   onReady,
   onTitle,
@@ -35,7 +38,7 @@ export function TerminalView({
       debug={import.meta.env.DEV}
       maxImageWidth={1600}
       maxImageHeight={1000}
-      style={{ height: "100%" }}
+      style={{ height: "100%", "--term-font-size": `${fontSize}px` } as CSSProperties}
       className="terminal"
       onReady={(wterm) => {
         if (wterm !== terminalRef.current?.instance) return;

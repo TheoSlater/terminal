@@ -1,5 +1,5 @@
 import { useTerminal } from "@wterm/react";
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useAutoFocus } from "@/hooks/useAutoFocus";
 import { useGhosttyCore } from "@/hooks/useGhosttyCore";
 import { usePtyTerminal } from "@/hooks/usePtyTerminal";
@@ -12,6 +12,8 @@ export function TerminalSession({
   onExit,
   onStarted,
   onTitle,
+  command,
+  fontSize,
   sessionId,
 }: TerminalSessionProps) {
   const { ref, write, focus } = useTerminal();
@@ -30,6 +32,15 @@ export function TerminalSession({
   useTerminalResize(active, ready, ref, viewportRef, resize, sessionId);
   useAutoFocus(active, ready, focus);
 
+  useEffect(() => {
+    if (!command || !active) return;
+    if (command.type === "clear") write("\u001b[2J\u001b[H");
+    if (command.type === "copy") document.execCommand("copy");
+    if (command.type === "paste") {
+      void navigator.clipboard.readText().then(writeInput).catch(() => undefined);
+    }
+  }, [active, command, write, writeInput]);
+
   const handleReady = useCallback(() => {
     void start();
     setReady(true);
@@ -43,6 +54,7 @@ export function TerminalSession({
       <div ref={viewportRef} className="terminal-viewport">
         <TerminalView
           core={core}
+          fontSize={fontSize}
           terminalRef={ref}
           onReady={handleReady}
           onTitle={onTitle}

@@ -11,6 +11,11 @@ export type Session = {
   status: SessionStatus;
 };
 
+export type TerminalCommand = {
+  id: number;
+  type: "clear" | "copy" | "paste";
+};
+
 /** Payload for `pty-output` events — raw bytes from the PTY. */
 export type PtyOutput = { sessionId: string; data: number[] };
 
@@ -24,4 +29,6 @@ export type TerminalSessionProps = {
   onStarted: (cwd: string) => void;
   onTitle: (title: string) => void;
   onExit: (code: number | null) => void;
+  command: TerminalCommand | null;
+  fontSize: number;
 };
